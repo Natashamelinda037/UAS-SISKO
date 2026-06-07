@@ -1,0 +1,105 @@
+/* ===========================
+   GLOBAL & LAYOUT STYLES
+   =========================== */
+body {
+    background: linear-gradient(135deg, #4facfe 0%, #a18cd1 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+}
+
+.container-fluid {
+    padding: 8px 20px;
+}
+
+.sidebar, .main-content {
+    margin-top: 8px;
+}
+
+/* ===========================
+   NAVBAR & SIDEBAR
+   =========================== */
+.navbar {
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar {
+    min-height: calc(100vh - 80px);
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 15px;
+    margin-top: 20px;
+}
+
+/* ===========================
+   MENU ITEMS (LIST GROUP)
+   =========================== */
+.list-group-item {
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #555;
+    padding: 12px 15px;
+    font-weight: 500;
+}
+
+.list-group-item:hover {
+    background-color: #e9ecef;
+    transform: translateX(4px);
+    color: #0d6efd;
+}
+
+.list-group-item.active {
+    background-color: #0d6efd;
+    color: white;
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+    font-weight: 600;
+}
+
+/* ===========================
+   MAIN CONTENT AREA
+   =========================== */
+.main-content {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 25px;
+    min-height: calc(100vh - 96px);
+    margin-top: 20px;
+}
+
+/* ===========================
+   CARDS & CHARTS
+   =========================== */
+.card-stat {
+    border: none;
+    border-radius: 12px;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-stat:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.card-chart {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ===========================
+   TOAST & UTILITIES
+   =========================== */
+.fixed-toast { z-index: 1100; }
+
+/* Responsive Sidebar */
+@media (max-width: 768px) {
+    .sidebar { margin-bottom: 20px; min-height: auto; }
+}

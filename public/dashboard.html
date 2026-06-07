@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SISKO</title>
+    
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#"><i class="bi bi-shield-check me-2"></i>SISKO</a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-white small"><i class="bi bi-person-circle me-1"></i><span id="userName">Memuat...</span></span>
+                <button class="btn btn-sm btn-outline-light" id="logoutBtn" title="Keluar dari sistem" aria-label="Logout"><i class="bi bi-box-arrow-right"></i> Keluar</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Layout -->
+    <div class="container-fluid">
+        <div class="row g-3">
+            <div class="col-md-2">
+                <div class="sidebar list-group" id="menuContainer" role="navigation" aria-label="Menu navigasi"></div>
+            </div>
+            <div class="col-md-10">
+                <div class="main-content" id="mainContent" role="main">
+                    <div class="text-center py-5 text-muted">
+                        <div class="spinner-border text-primary mb-3" role="status"><span class="visually-hidden">Loading...</span></div>
+                        <p>Memuat data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="position-fixed bottom-0 end-0 p-3 fixed-toast">
+        <div id="liveToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage">Notifikasi</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Update Status Insiden -->
+    <div class="modal fade" id="modalStatus" tabindex="-1" aria-labelledby="modalStatusLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalStatusLabel"><i class="bi bi-pencil-square me-2"></i>Update Status</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editInsidenId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" for="selectStatus">Status Baru</label>
+                        <select class="form-select" id="selectStatus" aria-label="Pilih status baru" required>
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveStatus()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail Insiden -->
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="modalDetailLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalDetailLabel"><i class="bi bi-eye me-2"></i>Detail Insiden</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body"><div id="detailContent"></div></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Delete Insiden -->
+    <div class="modal fade" id="modalDelete" tabindex="-1" aria-labelledby="modalDeleteLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalDeleteLabel"><i class="bi bi-exclamation-triangle me-2"></i>Konfirmasi Hapus</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="deleteInsidenId">
+                    <p>Apakah Anda yakin ingin menghapus insiden ini?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah Petugas -->
+    <div class="modal fade" id="modalTambahPetugas" tabindex="-1" aria-labelledby="modalTambahLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalTambahLabel"><i class="bi bi-person-plus me-2"></i>Tambah Petugas</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formTambahPetugas">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="addNip">NIP *</label>
+                            <input type="text" class="form-control" id="addNip" placeholder="Contoh: PO-2026-002" required aria-label="NIP petugas">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="addNama">Nama Lengkap *</label>
+                            <input type="text" class="form-control" id="addNama" required aria-label="Nama lengkap petugas">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="addJabatan">Jabatan</label>
+                            <input type="text" class="form-control" id="addJabatan" placeholder="Security Officer" aria-label="Jabatan petugas">
+                        </div>
+                        
+                        <!-- ===== ROLE DIPINDAHKAN KE ATAS (SEBELUM SHIFT) ===== -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="addRole">Role *</label>
+                            <select class="form-select" id="addRole" required aria-label="Pilih role">
+                                <option value="">Pilih Role...</option>
+                                <option value="petugas">Petugas</option>
+                                <option value="manajemen">Manajemen</option>
+                                <option value="security_lead">Security Lead</option>
+                            </select>
+                        </div>
+                        
+                        <!-- SHIFT FIELD (akan muncul/hilang berdasarkan Role) -->
+                        <div class="mb-3" id="shiftField">
+                            <label class="form-label fw-bold" for="addShift">Shift *</label>
+                            <select class="form-select" id="addShift" aria-label="Pilih shift">
+                                <option value="">Pilih Shift...</option>
+                                <option value="pagi">Pagi (06:00 - 14:00)</option>
+                                <option value="siang">Siang (14:00 - 22:00)</option>
+                                <option value="malam">Malam (22:00 - 06:00)</option>
+                            </select>
+                        </div>
+                        
+                        <hr>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Opsional:</strong> Isi username & password jika perlu login
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="addUsername">Username (untuk login)</label>
+                            <input type="text" class="form-control" id="addUsername" placeholder="Username" aria-label="Username untuk login">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="addPassword">Password (untuk login)</label>
+                            <input type="password" class="form-control" id="addPassword" placeholder="Password" aria-label="Password untuk login">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-success" onclick="submitTambahPetugas()">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Status Petugas -->
+    <div class="modal fade" id="modalKonfirmasiStatus" tabindex="-1" aria-labelledby="modalKonfirmasiLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="modalKonfirmasiLabel"><i class="bi bi-exclamation-triangle me-2"></i>Konfirmasi Perubahan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="togglePetugasId">
+                    <input type="hidden" id="togglePetugasCurrentStatus">
+                    <p class="mb-0" id="togglePetugasMessage">Apakah Anda yakin?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-warning" onclick="confirmToggleStatus()">Ya, Konfirmasi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Hapus Petugas -->
+    <div class="modal fade" id="modalDeletePetugas" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-trash me-2"></i>Konfirmasi Hapus</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="deletePetugasId">
+                    <p>Yakin ingin menghapus petugas ini? Data terkait juga akan terhapus permanen.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeletePetugas()">Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- APP LOGIC -->
+    <script>
+        let currentUser = null;
+        const toastEl = document.getElementById('liveToast');
+        const toastMsg = document.getElementById('toastMessage');
+        const bsToast = new bootstrap.Toast(toastEl);
+
+        function showToast(msg, type = 'success') {
+            toastMsg.textContent = msg;
+            toastEl.className = `toast align-items-center text-white border-0 bg-${type}`;
+            bsToast.show();
+        }
+
+        function getStatusColor(status) {
+            const colors = { 'Open': '#0d6efd', 'In Progress': '#0dcaf0', 'Resolved': '#198754', 'Closed': '#6c757d' };
+            return colors[status] || '#6c757d';
+        }
+
+        // Init Auth
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' });
+                if (!res.ok) throw new Error('Sesi tidak valid');
+                const { data } = await res.json();
+                currentUser = data;
+                document.getElementById('userName').textContent = `${data.nip || data.username} (${data.role})`;
+                renderMenu(data.role);
+                setupMenuDelegation();
+                loadPage('dashboard');
+            } catch (err) { window.location.href = '/'; }
+        });
+
+        // Render Menu
+        function renderMenu(role) {
+            let html = `<a href="#" class="list-group-item list-group-item-action active" data-page="dashboard" aria-label="Dashboard">
+                <i class="bi bi-speedometer2 me-2"></i>Dashboard</a>`;
+            
+            if (role === 'security_lead' || role === 'petugas') {
+                html += `<a href="#" class="list-group-item list-group-item-action" data-page="list" aria-label="Daftar Insiden">
+                    <i class="bi bi-list-ul me-2"></i>Daftar Insiden</a>`;
+                html += `<a href="#" class="list-group-item list-group-item-action" data-page="create" aria-label="Buat Laporan">
+                    <i class="bi bi-plus-circle me-2"></i>Buat Laporan</a>`;
+            }
+            
+            if (role === 'security_lead') {
+                html += `<a href="#" class="list-group-item list-group-item-action" data-page="manage" aria-label="Kelola Petugas">
+                    <i class="bi bi-people me-2"></i>Kelola Petugas</a>`;
+            }
+            
+            if (role === 'manajemen') {
+                html += `<a href="#" class="list-group-item list-group-item-action" data-page="list" aria-label="Laporan Insiden">
+                    <i class="bi bi-file-earmark-text me-2"></i>Laporan Insiden</a>`;
+                html += `<a href="#" class="list-group-item list-group-item-action" data-page="analytics" aria-label="Analytics">
+                    <i class="bi bi-graph-up me-2"></i>Analytics</a>`;
+            }
+            
+            document.getElementById('menuContainer').innerHTML = html;
+        }
+
+        function setupMenuDelegation() {
+            document.getElementById('menuContainer').addEventListener('click', function(e) {
+                const link = e.target.closest('a');
+                if (!link) return;
+                e.preventDefault();
+                document.querySelectorAll('#menuContainer a').forEach(i => i.classList.remove('active'));
+                link.classList.add('active');
+                loadPage(link.getAttribute('data-page'));
+            });
+        }
+
+        // Router
+        async function loadPage(page) {
+            const box = document.getElementById('mainContent');
+            box.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+            try {
+                if (page === 'dashboard') await renderDashboard(box);
+                else if (page === 'list') await renderList(box);
+                else if (page === 'create') await renderCreate(box);
+                else if (page === 'manage') await renderManagePetugas(box);
+                else if (page === 'analytics') await renderAnalytics(box);
+                else box.innerHTML = '<div class="alert alert-info">Fitur dalam pengembangan</div>';
+            } catch (err) { box.innerHTML = `<div class="alert alert-danger">Gagal memuat: ${err.message}</div>`; }
+        }
+
+    
+        // Dashboard Render (UPDATED: Swap Trend & Priority)
+        async function renderDashboard(box) {
+            try {
+                const res = await fetch('/api/insiden', { credentials: 'include' });
+                if (!res.ok) throw new Error('Gagal ambil data');
+                const { data } = await res.json();
+                
+                const stats = { total: data.length, open: 0, progress: 0, resolved: 0 };
+                const byLocation = {}, byPriority = { Low: 0, Medium: 0, High: 0, Critical: 0 }, monthlyData = {};
+
+                data.forEach(i => {
+                    if (i.status === 'Open') stats.open++;
+                    else if (i.status === 'In Progress') stats.progress++;
+                    else stats.resolved++;
+                    byPriority[i.prioritas]++;
+                    const loc = i.nama_lokasi || 'Lainnya';
+                    if (!byLocation[loc]) byLocation[loc] = { Open: 0, 'In Progress': 0, Resolved: 0, Closed: 0, total: 0 };
+                    byLocation[loc][i.status]++; byLocation[loc].total++;
+                    const month = new Date(i.waktu_lapor).toLocaleDateString('id-ID', { month: 'short' });
+                    monthlyData[month] = (monthlyData[month] || 0) + 1;
+                });
+
+                Object.keys(byLocation).forEach(loc => {
+                    let max = 0, dominant = 'Open';
+                    ['Open', 'In Progress', 'Resolved', 'Closed'].forEach(s => { if (byLocation[loc][s] > max) { max = byLocation[loc][s]; dominant = s; } });
+                    byLocation[loc].dominantStatus = dominant;
+                });
+
+                // ===== HTML UPDATED: Row 2 (Lokasi+Prioritas), Row 3 (Trend Full Width) =====
+                box.innerHTML = `
+                    <h4 class="mb-4 fw-bold text-primary"><i class="bi bi-speedometer2 me-2"></i>Dashboard Overview</h4>
+                    
+                    <!-- Row 1: Stats Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3"><div class="card-stat bg-primary p-3"><h6>Total Insiden</h6><h2>${stats.total}</h2></div></div>
+                        <div class="col-md-3"><div class="card-stat bg-warning p-3"><h6>Open</h6><h2>${stats.open}</h2></div></div>
+                        <div class="col-md-3"><div class="card-stat bg-info p-3"><h6>In Progress</h6><h2>${stats.progress}</h2></div></div>
+                        <div class="col-md-3"><div class="card-stat bg-success p-3"><h6>Resolved</h6><h2>${stats.resolved}</h2></div></div>
+                    </div>
+
+                    <!-- Row 2: Lokasi & Prioritas -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card-chart card h-100">
+                                <div class="card-header bg-white border-0 pt-3 px-3"><h6>Lokasi</h6></div>
+                                <div class="card-body" style="height:250px"><canvas id="barChart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card-chart card h-100">
+                                <div class="card-header bg-white border-0 pt-3 px-3"><h6>Prioritas</h6></div>
+                                <div class="card-body" style="height:250px"><canvas id="priorityChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Trend (Full Width) -->
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-12">
+                            <div class="card-chart card h-100">
+                                <div class="card-header bg-white border-0 pt-3 px-3"><h6>Trend Insiden</h6></div>
+                                <div class="card-body" style="height:300px"><canvas id="lineChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                setTimeout(() => {
+                    const monthOrder = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+                    const sortedMonths = Object.keys(monthlyData).sort((a,b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+                    const sortedData = sortedMonths.map(m => monthlyData[m]);
+                    
+                    // 1. Trend Chart (Full Width)
+                    new Chart(document.getElementById('lineChart'), {
+                        type: 'line',
+                        data: {
+                            labels: sortedMonths,
+                            datasets: [{
+                                label: 'Jumlah',
+                                data: sortedData,
+                                borderColor: '#0d6efd',
+                                backgroundColor: 'rgba(13,110,253,0.2)',
+                                fill: true,
+                                pointBackgroundColor: '#0d6efd',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        }
+                    });
+                    
+                    // 2. Lokasi Chart (Blue Bars)
+                    const locLabels = Object.keys(byLocation);
+                    renderChart('barChart', 'bar', locLabels, locLabels.map(l => byLocation[l].total), 'Insiden', '#0d6efd');
+                    
+                    // 3. Prioritas Chart (Horizontal Bar)
+                    new Chart(document.getElementById('priorityChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Low', 'Medium', 'High', 'Critical'],
+                            datasets: [{
+                                label: 'Prioritas',
+                                data: [byPriority.Low, byPriority.Medium, byPriority.High, byPriority.Critical],
+                                backgroundColor: '#dc3545',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y', 
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        }
+                    });
+                }, 100);
+            } catch (e) { box.innerHTML = '<div class="alert alert-danger">Gagal memuat dashboard</div>'; }
+        }
+
+        function renderChart(id, type, labels, data, labelName, color) {
+            const ctx = document.getElementById(id); if (!ctx) return;
+            new Chart(ctx, { type: type, data: { labels: labels, datasets: [{ label: labelName || 'Data', data: data, backgroundColor: Array.isArray(color) ? color : (color || 'rgba(13,110,253,0.2)'), borderColor: Array.isArray(color) ? color : (color || '#0d6efd'), borderWidth: 1, fill: type === 'line' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+        }
+
+        // List Insiden
+        async function renderList(box) {
+            const res = await fetch('/api/insiden', { credentials: 'include' });
+            const { data } = await res.json();
+            if (!data.length) { box.innerHTML = '<div class="alert alert-info">Belum ada data</div>'; return; }
+            
+            const isManajemen = currentUser.role === 'manajemen';
+            
+            let rows = data.map((i, idx) => `
+                <tr>
+                    <td>${idx+1}</td>
+                    <td><span class="badge bg-secondary">${i.kode_insiden}</span></td>
+                    <td class="fw-bold">${i.judul}</td>
+                    <td>${i.nama_lokasi||'-'}</td>
+                    <td><span class="badge bg-${i.prioritas==='High'||i.prioritas==='Critical'?'danger':'warning'}">${i.prioritas}</span></td>
+                    <td><span class="badge bg-${i.status==='Open'?'primary':i.status==='In Progress'?'info':'success'}">${i.status}</span></td>
+                    <td>${new Date(i.waktu_lapor).toLocaleDateString('id-ID')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="showDetail(${i.id_insiden})" title="Detail" aria-label="Detail">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        ${!isManajemen ? `
+                            <button class="btn btn-sm btn-primary" onclick="openStatusModal(${i.id_insiden},'${i.status}')" title="Edit" aria-label="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            ${currentUser.role==='security_lead' ? `
+                                <button class="btn btn-sm btn-danger" onclick="deleteInsiden(${i.id_insiden})" title="Hapus" aria-label="Hapus">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            ` : ''}
+                        ` : ''}
+                    </td>
+                </tr>`).join('');
+            
+            box.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold"><i class="bi bi-list-ul me-2 text-primary"></i>${isManajemen ? 'Laporan Insiden' : 'Daftar Insiden'}</h4>
+                    ${isManajemen ? `
+                        <button class="btn btn-success" onclick="exportLaporan()" title="Export" aria-label="Export CSV">
+                            <i class="bi bi-download me-2"></i>Export CSV
+                        </button>
+                    ` : ''}
+                </div>
+                <div class="card shadow-sm">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="bg-light">
+                                <tr><th>No</th><th>Kode</th><th>Judul</th><th>Lokasi</th><th>Prioritas</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+        }
+
+        // Create Form
+        async function renderCreate(box) {
+            try {
+                const res = await fetch('/api/lokasi', { credentials: 'include' });
+                if (!res.ok) throw new Error('Gagal koneksi API');
+                const { data } = await res.json();
+                if (!data || data.length === 0) { box.innerHTML = '<div class="alert alert-warning">Belum ada data lokasi.</div>'; return; }
+                const opts = data.map(l => `<option value="${l.id_lokasi}">${l.nama_lokasi} (${l.kode_area})</option>`).join('');
+                box.innerHTML = `<h4 class="mb-4 fw-bold"><i class="bi bi-plus-circle me-2"></i>Buat Laporan Insiden</h4><form id="formInsiden" enctype="multipart/form-data"><div class="row g-3"><div class="col-md-6"><label class="form-label fw-bold" for="judul">Judul *</label><input type="text" name="judul" id="judul" class="form-control" placeholder="Contoh: Kebocoran pipa" required></div><div class="col-md-6"><label class="form-label fw-bold" for="lokasi">Lokasi *</label><select name="id_lokasi" id="lokasi" class="form-select" required>${opts}</select></div><div class="col-12"><label class="form-label fw-bold" for="deskripsi">Deskripsi *</label><textarea name="deskripsi" id="deskripsi" class="form-control" rows="4" placeholder="Jelaskan detail insiden..." required></textarea></div><div class="col-md-6"><label class="form-label fw-bold" for="prioritas">Prioritas</label><select name="prioritas" id="prioritas" class="form-select"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div><div class="col-md-6"><label class="form-label fw-bold" for="foto">Foto</label><input type="file" name="bukti_foto" id="foto" class="form-control" accept="image/*"></div><div class="col-12 mt-3"><button type="submit" class="btn btn-primary px-4 fw-bold"><i class="bi bi-send me-2"></i>Kirim</button></div></div></form>`;
+                document.getElementById('formInsiden').addEventListener('submit', async e => { e.preventDefault(); const fd = new FormData(e.target); try { const res = await fetch('/api/insiden', { method: 'POST', body: fd, credentials: 'include' }); const json = await res.json(); if (json.success) { showToast('Laporan berhasil!'); document.querySelector('[data-page="list"]').click(); } else showToast(json.message, 'danger'); } catch (err) { showToast('Gagal kirim', 'danger'); } });
+            } catch (e) { box.innerHTML = `<div class="alert alert-danger">Gagal memuat form: ${e.message}</div>`; }
+        }
+
+        // Modal Status
+        function openStatusModal(id, status) { document.getElementById('editInsidenId').value = id; document.getElementById('selectStatus').value = status; new bootstrap.Modal(document.getElementById('modalStatus')).show(); }
+        async function saveStatus() { const id = document.getElementById('editInsidenId').value; const newStatus = document.getElementById('selectStatus').value; try { await fetch(`/api/insiden/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status: newStatus }), credentials: 'include' }); showToast('Status diperbarui'); bootstrap.Modal.getInstance(document.getElementById('modalStatus')).hide(); loadPage('list'); } catch { showToast('Gagal update', 'danger'); } }
+
+        // Detail View
+        async function showDetail(id) { try { const res = await fetch(`/api/insiden/${id}`, { credentials: 'include' }); const { data } = await res.json(); if (!data) { showToast('Data tidak ada', 'danger'); return; } document.getElementById('detailContent').innerHTML = `<div class="row"><div class="col-md-6 mb-3"><h6 class="text-muted">Kode</h6><p class="fw-bold">${data.kode_insiden}</p></div><div class="col-md-6 mb-3"><h6 class="text-muted">Status</h6><span class="badge bg-${data.status==='Open'?'primary':data.status==='In Progress'?'info':'success'}">${data.status}</span></div><div class="col-md-6 mb-3"><h6 class="text-muted">Judul</h6><p>${data.judul}</p></div><div class="col-md-6 mb-3"><h6 class="text-muted">Prioritas</h6><span class="badge bg-${['High','Critical'].includes(data.prioritas)?'danger':'warning'}">${data.prioritas}</span></div><div class="col-12 mb-3"><h6 class="text-muted">Deskripsi</h6><p class="bg-light p-3 rounded">${data.deskripsi}</p></div><div class="col-md-6 mb-3"><h6 class="text-muted">Lokasi</h6><p>${data.nama_lokasi||'-'} <small class="text-muted">(${data.kode_area||'-'})</small></p></div><div class="col-md-6 mb-3"><h6 class="text-muted">Penanggung Jawab</h6><p>${data.penanggung_jawab||'-'}</p></div><div class="col-md-4 mb-3"><h6 class="text-muted">Waktu Lapor</h6><p>${new Date(data.waktu_lapor).toLocaleString('id-ID')}</p></div><div class="col-md-4 mb-3"><h6 class="text-muted">Waktu Respon</h6><p>${data.waktu_respon?new Date(data.waktu_respon).toLocaleString('id-ID'):'-'}</p></div><div class="col-md-4 mb-3"><h6 class="text-muted">Waktu Selesai</h6><p>${data.waktu_selesai?new Date(data.waktu_selesai).toLocaleString('id-ID'):'-'}</p></div>${data.bukti_foto?`<div class="col-12"><h6 class="text-muted">Foto</h6><img src="${data.bukti_foto}" class="img-fluid rounded" style="max-height:400px"></div>`:''}</div>`; new bootstrap.Modal(document.getElementById('modalDetail')).show(); } catch { showToast('Gagal load detail', 'danger'); } }
+
+        // Delete Insiden
+        window.deleteInsiden = (id) => { document.getElementById('deleteInsidenId').value = id; new bootstrap.Modal(document.getElementById('modalDelete')).show(); };
+        window.confirmDelete = async () => { const id = document.getElementById('deleteInsidenId').value; try { await fetch(`/api/insiden/${id}`, { method: 'DELETE', credentials: 'include' }); showToast('Dihapus'); bootstrap.Modal.getInstance(document.getElementById('modalDelete')).hide(); loadPage('list'); } catch { showToast('Gagal hapus', 'danger'); } };
+
+        // Kelola Petugas
+        async function renderManagePetugas(box) {
+            try {
+                console.log('Fetching petugas data...');
+                const res = await fetch('/api/petugas', { credentials: 'include' });
+                
+                console.log('Response status:', res.status);
+                
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('API Error:', errorText);
+                    throw new Error(`HTTP ${res.status}: ${errorText}`);
+                }
+                
+                const result = await res.json();
+                console.log('Response data:', result);
+                
+                const data = result.data || result.rows || [];
+                
+                console.log('Data length:', data.length);
+                
+                if (!data.length) {
+                    box.innerHTML = '<div class="alert alert-info text-center"><i class="bi bi-info-circle me-2"></i>Belum ada data petugas</div>';
+                    return;
+                }
+                
+                let rows = data.map((p, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><span class="badge bg-secondary">${p.nip || '-'}</span></td>
+                        <td class="fw-bold">${p.nama_lengkap || '-'}</td>
+                        <td>${p.jabatan || '-'}</td>
+                        <td>${p.shift ? `<span class="badge bg-info">${p.shift}</span>` : '<span class="text-muted">-</span>'}</td>
+                        <td><span class="badge bg-${p.status_aktif ? 'success' : 'secondary'}">${p.status_aktif ? 'Aktif' : 'Nonaktif'}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-${p.status_aktif ? 'danger' : 'success'}" 
+                                    onclick="toggleStatusPetugas(${p.id_petugas}, ${p.status_aktif})"
+                                    title="${p.status_aktif ? 'Nonaktifkan' : 'Aktifkan'}">
+                                <i class="bi bi-${p.status_aktif ? 'x' : 'check'}-circle"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-1" onclick="deletePetugas(${p.id_petugas})" title="Hapus" aria-label="Hapus petugas">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                box.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="fw-bold mb-0"><i class="bi bi-people me-2 text-primary"></i>Kelola Petugas</h4>
+                        <div>
+                            <button class="btn btn-success" onclick="showModalTambahPetugas()">
+                                <i class="bi bi-plus-circle me-2"></i>Tambah
+                            </button>
+                            <span class="badge bg-light text-dark ms-2">${data.length} Petugas</span>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr><th>No</th><th>NIP</th><th>Nama</th><th>Jabatan</th><th>Shift</th><th>Status</th><th>Aksi</th></tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                console.error('Error render petugas:', err);
+                box.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Gagal memuat data: ${err.message}<br>
+                        <small class="text-muted">Lihat console untuk detail error</small>
+                    </div>
+                `;
+            }
+        }
+
+        // Toggle Status Petugas
+        window.toggleStatusPetugas = (id, status) => {
+            console.log('Toggle clicked - ID:', id, 'Status:', status);
+            document.getElementById('togglePetugasId').value = id;
+            document.getElementById('togglePetugasCurrentStatus').value = status;
+            
+            const actionText = status 
+                ? '<strong>NONAKTIFKAN</strong> petugas ini?<br><small class="text-muted">Petugas tidak akan bisa login ke sistem.</small>'
+                : '<strong>AKTIFKAN</strong> petugas ini?<br><small class="text-muted">Petugas akan bisa login kembali.</small>';
+            
+            document.getElementById('togglePetugasMessage').innerHTML = actionText;
+            new bootstrap.Modal(document.getElementById('modalKonfirmasiStatus')).show();
+        };
+
+        window.confirmToggleStatus = async () => {
+            const id = document.getElementById('togglePetugasId').value;
+            const currentStatus = document.getElementById('togglePetugasCurrentStatus').value;
+            
+            const isCurrentlyActive = (currentStatus === 'true' || currentStatus === '1');
+            const newStatus = !isCurrentlyActive; 
+            
+            console.log('Mengubah status dari', isCurrentlyActive, 'menjadi', newStatus);
+
+            try {
+                const res = await fetch(`/api/petugas/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status_aktif: newStatus }),
+                    credentials: 'include'
+                });
+                
+                if (!res.ok) throw new Error('Gagal');
+                
+                const actionText = newStatus ? 'diaktifkan' : 'dinonaktifkan';
+                showToast(`Petugas berhasil ${actionText}`);
+                
+                bootstrap.Modal.getInstance(document.getElementById('modalKonfirmasiStatus')).hide();
+                loadPage('manage');
+            } catch (err) {
+                showToast('Gagal update status', 'danger');
+            }
+        };
+
+        // Export Laporan CSV
+        async function exportLaporan() {
+            try {
+                showToast('Mengunduh laporan...');
+                const res = await fetch('/api/insiden/export/laporan', { credentials: 'include' });
+                if (!res.ok) throw new Error('Gagal export');
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `laporan_insiden_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showToast('Laporan berhasil diunduh');
+            } catch (err) {
+                showToast('Gagal export: ' + err.message, 'danger');
+            }
+        }
+
+        // Analytics
+        async function renderAnalytics(box) {
+            if (currentUser.role !== 'manajemen' && currentUser.role !== 'security_lead') {
+                box.innerHTML = '<div class="alert alert-danger">Akses ditolak</div>';
+                return;
+            }
+            try {
+                const res = await fetch('/api/insiden/analytics/summary', { credentials: 'include' });
+                if (!res.ok) throw new Error('Gagal ambil data');
+                const { data } = await res.json();
+                
+                box.innerHTML = `
+                    <h4 class="mb-4 fw-bold text-primary"><i class="bi bi-graph-up me-2"></i>Analytics Dashboard</h4>
+                    
+                    <!-- Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);">
+                                <div class="card-body text-white text-center p-4">
+                                    <h6 class="text-uppercase mb-2 opacity-75">Rata-rata Respon</h6>
+                                    <h2 class="display-4 fw-bold mb-0">${(Number(data.rata_rata_respon) || 0).toFixed(1)} <small style="font-size:1.5rem">jam</small></h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%);">
+                                <div class="card-body text-white text-center p-4">
+                                    <h6 class="text-uppercase mb-2 opacity-75">Resolved</h6>
+                                    <h2 class="display-4 fw-bold mb-0">${data.per_status.find(s => s.status === 'Resolved')?.jumlah || 0}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+                                <div class="card-body text-white text-center p-4">
+                                    <h6 class="text-uppercase mb-2 opacity-75">Resolution Rate</h6>
+                                    <h2 class="display-4 fw-bold mb-0">${calculateResolutionRate(data.per_status)}%</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white border-0 py-3 px-4">
+                                    <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart me-2 text-primary"></i>Insiden per Status</h6>
+                                </div>
+                                <div class="card-body px-4" style="height: 300px;">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white border-0 py-3 px-4">
+                                    <h6 class="mb-0 fw-bold"><i class="bi bi-flag me-2 text-primary"></i>Insiden per Prioritas</h6>
+                                </div>
+                                <div class="card-body px-4" style="height: 300px;">
+                                    <canvas id="priorityChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    // Status Chart
+                    new Chart(document.getElementById('statusChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: data.per_status.map(s => s.status),
+                            datasets: [{
+                                data: data.per_status.map(s => s.jumlah),
+                                backgroundColor: ['#0d6efd','#0dcaf0','#198754','#6c757d'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'bottom' } }
+                        }
+                    });
+                    
+                    // Priority Chart (Horizontal Bar)
+                    const priorities = ['Low', 'Medium', 'High', 'Critical'];
+                    const priorityData = priorities.map(p => data.per_status.find(s => s.status === p)?.jumlah || 0);
+                    
+                    new Chart(document.getElementById('priorityChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: priorities,
+                            datasets: [{
+                                label: 'Prioritas',
+                                data: priorityData,
+                                backgroundColor: ['#28a745','#ffc107','#dc3545','#6f42c1'],
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        }
+                    });
+                }, 100);
+            } catch (err) {
+                box.innerHTML = `<div class="alert alert-danger">Gagal memuat analytics: ${err.message}</div>`;
+            }
+        }
+
+        function calculateResolutionRate(perStatus) {
+            const total = perStatus.reduce((sum, s) => sum + s.jumlah, 0);
+            const resolved = perStatus.find(s => s.status === 'Resolved')?.jumlah || 0;
+            if (total === 0) return 0;
+            return Math.round((resolved / total) * 100);
+        }
+
+        // Toggle field shift berdasarkan role
+        document.getElementById('addRole')?.addEventListener('change', function() {
+            const shiftField = document.getElementById('shiftField');
+            const shiftSelect = document.getElementById('addShift');
+            
+            if (this.value === 'petugas') {
+                shiftField.style.display = 'block';
+                shiftSelect.required = true;
+            } else {
+                shiftField.style.display = 'none';
+                shiftSelect.required = false;
+                shiftSelect.value = '';
+            }
+        });
+
+        window.showModalTambahPetugas = () => { 
+            document.getElementById('formTambahPetugas').reset();
+            document.getElementById('shiftField').style.display = 'block';
+            document.getElementById('addShift').required = true;
+            new bootstrap.Modal(document.getElementById('modalTambahPetugas')).show(); 
+        };
+        
+        // ===== UPDATE: Fungsi submitTambahPetugas dengan validasi role-based =====
+        window.submitTambahPetugas = async () => { 
+            const role = document.getElementById('addRole').value;
+            const shiftValue = document.getElementById('addShift').value;
+            
+            const d = { 
+                nip: document.getElementById('addNip').value.trim(), 
+                nama_lengkap: document.getElementById('addNama').value.trim(), 
+                jabatan: document.getElementById('addJabatan').value.trim(),
+                shift: role === 'petugas' ? shiftValue : null, // Shift hanya untuk petugas
+                role: role, // Penting: kirim role ke backend
+                username: document.getElementById('addUsername').value.trim(), 
+                password: document.getElementById('addPassword').value 
+            }; 
+            
+            // Validasi field wajib (TANPA shift)
+            if (!d.nip || !d.nama_lengkap || !d.role || !d.username || !d.password) { 
+                showToast('Field bertanda * wajib diisi!', 'danger'); 
+                return; 
+            }
+            
+            // Validasi shift HANYA untuk petugas
+            if (role === 'petugas' && !d.shift) {
+                showToast('Shift wajib dipilih untuk Petugas!', 'danger');
+                return;
+            }
+            
+            try { 
+                const res = await fetch('/api/petugas', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(d), 
+                    credentials: 'include' 
+                }); 
+                if (!res.ok) { 
+                    const e = await res.json().catch(()=>({})); 
+                    throw new Error(e.message||'Gagal'); 
+                } 
+                showToast('Berhasil ditambahkan!'); 
+                bootstrap.Modal.getInstance(document.getElementById('modalTambahPetugas')).hide(); 
+                loadPage('manage'); 
+            } catch (err) { 
+                showToast('Error: '+err.message, 'danger'); 
+            } 
+        };
+
+        // Hapus Petugas
+        window.deletePetugas = (id) => {
+            document.getElementById('deletePetugasId').value = id;
+            new bootstrap.Modal(document.getElementById('modalDeletePetugas')).show();
+        };
+
+        window.confirmDeletePetugas = async () => {
+            const id = document.getElementById('deletePetugasId').value;
+            try {
+                const res = await fetch(`/api/petugas/${id}`, { 
+                    method: 'DELETE', 
+                    credentials: 'include' 
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || 'Gagal');
+                }
+                showToast('Petugas berhasil dihapus');
+                bootstrap.Modal.getInstance(document.getElementById('modalDeletePetugas')).hide();
+                loadPage('manage');
+            } catch (err) {
+                showToast('Gagal menghapus: ' + err.message, 'danger');
+            }
+        };
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); window.location.href = '/'; });
+    </script>
+</body>
+</html>
